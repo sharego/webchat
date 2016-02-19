@@ -20,11 +20,13 @@ import socket
 try:
 	import fcntl
 except:
-	pass
+	fcntl = None
 
 import struct
 import re
 import os
+
+from __future__ import print_function
 
 class MainHandler(tornado.web.RequestHandler):
 		def get(self):
@@ -183,14 +185,14 @@ class Other(tornado.web.RequestHandler):
 		self.write('error!')
 
 	def ip(self, ifname):
-		if os.name == 'nt':
+		if fcntl is None:
 			return ifname
 		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
 		return socket.inet_ntoa(fcntl.ioctl( 
 			s.fileno(), 
 			0x8915,
 			struct.pack('256s', ifname[:15]) 
-		)[20:24]) 
+		)[20:24])
 		
 settings = {
 	'static_path' : os.path.join(os.getcwd(),"static"),
