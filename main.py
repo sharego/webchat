@@ -1,4 +1,6 @@
+#!/usr/bin/python
 # encoding=utf-8
+from __future__ import print_function
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
@@ -25,8 +27,6 @@ except:
 import struct
 import re
 import os
-
-from __future__ import print_function
 
 class MainHandler(tornado.web.RequestHandler):
 		def get(self):
