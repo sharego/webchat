@@ -41,10 +41,10 @@ var point = {
 };
 
 // history
-var history = {
+var wehistory = {
 	log:[],	
 	add:function(str){
-		history.log.push(log.encodeHtml(str));	    
+		wehistory.log.push(log.encodeHtml(str));	    
 	}
 };
 
@@ -71,8 +71,8 @@ var command = {
 		'fun' : function(){
 			var html = '';
 			var num = 1;
-			for(var i in history.log){
-				html += num+'. '+history.log[i] + '<br />';
+			for(var i in wehistory.log){
+				html += num+'. '+wehistory.log[i] + '<br />';
 				num++;
 			}	
 			log.add(html);
@@ -203,7 +203,7 @@ var chat = {
 		this.obj.keyup(function(e){
 			var msg = $.trim($(this).val());
 			if(e.keyCode==13 && msg !=''){
-				history.add(msg);
+				wehistory.add(msg);
 				if(!user.name){
 					user.name = msg;
 					chat.obj.val('');
@@ -750,7 +750,7 @@ upload.prototype = {
 $(document).ready(function(){
 	ui.init('#message','#action');
 	//so.init('ws://192.168.1.99:8888/websocket');
-	so.init('ws://50.116.7.117:8888/websocket');
+	so.init('ws://'+location.host+'/websocket');
 	focus.init();
 	log.init('#message');
 	point.init();

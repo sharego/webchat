@@ -4,20 +4,31 @@ import tornado.web
 import tornado.websocket
 import json
 import time
-import HTMLParser
-import Image
+try:
+	import HTMLParser
+except ImportError:
+	from html.parser import HTMLParser
+try:
+	import Image
+except ImportError:
+	from PIL import Image
+
 import tempfile
 import json
-import socket 
-import fcntl 
+import socket
+
+try:
+	import fcntl
+except:
+	pass
+
 import struct
 import re
 import os
 
-
 class MainHandler(tornado.web.RequestHandler):
-    	def get(self):
-        	self.write("Hello, world")
+		def get(self):
+			self.write("Hello, world")
 
 
 class web(tornado.websocket.WebSocketHandler):
@@ -48,10 +59,7 @@ class web(tornado.websocket.WebSocketHandler):
 		date = time.strftime("%H:%M:%S", time.localtime())
 		web.clients.remove(self)
 
-		if web.user.has_key(id(self)):
-			username = web.user[id(self)]['user']
-		else:
-			username = 'None'
+		username = web.user.get(id(self), {'user':'None'})['user']
 
 		web.send_to_all({
 			'type': 'sys',
@@ -65,7 +73,7 @@ class web(tornado.websocket.WebSocketHandler):
 		
 		date = time.strftime("%H:%M:%S", time.localtime())
 		user_id = id(self)
-		if web.user.has_key(user_id):	
+		if user_id in web.user:   
 			if message == ':who':
 				self.write_message(json.dumps({
 					'type': 'command',
@@ -75,10 +83,7 @@ class web(tornado.websocket.WebSocketHandler):
 			elif message.split()[0] == ':img':
 				if not message.split()[1]:return False
 
-				if web.user.has_key(user_id):
-					username = web.user[user_id]['user']
-				else:
-					username = 'None'
+				username = web.user.get(user_id, {'user':'None'})['user']
 
 				web.send_to_all({
 					'type': 'img',
@@ -86,14 +91,12 @@ class web(tornado.websocket.WebSocketHandler):
 					'user' : username,
 					'message':  message.split()[1],
 					'time' : date,
-				})			
+				})          
 
 			elif re.match(r'\w{64}\.(jpg|jpeg|png|gif)' , message) and os.path.exists('./static/upload/'+message):
 				message = '/static/upload/'+message
-				if web.user.has_key(user_id):
-					username = web.user[user_id]['user']
-				else:
-					username = 'None'
+
+				username = web.user.get(user_id, {'user':'None'})['user']
 
 				web.send_to_all_notme({
 					'type': 'img',
@@ -101,13 +104,10 @@ class web(tornado.websocket.WebSocketHandler):
 					'user' : username,
 					'message':  message,
 					'time' : date,
-				},self)				
+				},self)             
 
 			else:
-				if web.user.has_key(user_id):
-					username = web.user[user_id]['user']
-				else:
-					username = 'None'
+				username = web.user.get(user_id, {'user':'None'})['user']
 
 				web.send_to_all({
 					'type': 'user',
@@ -126,7 +126,7 @@ class web(tornado.websocket.WebSocketHandler):
 			
 			web.clients.add(self)
 
-		print web.user
+		print(web.user)
 
 class Upload(tornado.web.RequestHandler):
 	def get(self):
@@ -140,7 +140,7 @@ class Upload(tornado.web.RequestHandler):
 			self.html({'error' : 1, 'msg' : u'缺少filename参数'})
 			return False
 
-     		image_type_list = ['image/gif', 'image/jpeg','image/pjpeg', 'image/bmp', 'image/png', 'image/x-png']	
+			image_type_list = ['image/gif', 'image/jpeg','image/pjpeg', 'image/bmp', 'image/png', 'image/x-png']    
 
 		if myfile is None:
 			self.html({'error' : 1, 'msg' : u'请选择图片'})
@@ -157,18 +157,18 @@ class Upload(tornado.web.RequestHandler):
 			tf.seek(0)
 			
 			# create normal file
-          		try:
+			try:
 				img = Image.open(tf.name)
-	          	except IOError, error:
-	               		self.html({'error' : 1, 'msg' : u'图片不合法'})
-	               		return False
+			except IOError as error:
+				self.html({'error' : 1, 'msg' : u'图片不合法'})
+				return False
 			
 			img.save("./static/upload/" + filename )
 			tf.close()
 			self.html({'error' : 0, 'msg' : u'上传成功'})
 	
 	def html(self,result):
-		print result
+		print (result)
 		self.write(json.dumps( result ,separators=(',',':')))
 		#html = '<script type="text/javascript">window.parent.CKEDITOR.tools.callFunction('+str(fn)+', \''+fileurl+'\', \''+msg+'\');</script>' 
 		#html = '<script type="text/javascript">alert(\''+str(fn)+', '+fileurl+', '+msg+'\');</script>' 
@@ -183,6 +183,8 @@ class Other(tornado.web.RequestHandler):
 		self.write('error!')
 
 	def ip(self, ifname):
+		if os.name == 'nt':
+			return ifname
 		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
 		return socket.inet_ntoa(fcntl.ioctl( 
 			s.fileno(), 
@@ -202,5 +204,7 @@ application = tornado.web.Application([
 ], **settings )
 
 if __name__ == "__main__":
-	application.listen(8888)
+	port = 8888
+	application.listen(port)
+	print('Server listen on: ', port)
 	tornado.ioloop.IOLoop.instance().start()
